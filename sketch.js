@@ -37,7 +37,7 @@ class Branch {
 
     this.show = function () {
       if (parent) {
-        stroke(rod_color, 100);
+        stroke(rod_color[0], rod_color[1], rod_color[2], 240);
         line(this.pos.x, this.pos.y, this.parent.pos.x, this.parent.pos.y);
       }
     };
@@ -127,19 +127,39 @@ let system = {
   angle_min: 20,
   angle_max: 25.7,
   axiom: "X",
-  rules:[["X", // -> 1/10 chance to pick a substitution
-    "F[+X]F[-X]+X",
-    "F[-X]F[+X]-X",
-    "F[+X]F[+X]-X",
-    "F[-X]F[-X]+X",
-    "F-[[X]+X]+F[+FX]-X",
-    "F-[[X]-X]+F[+FX]-X",
-    "F-[[X]+X]+F[-FX]-X",
-    "F-[[X]+X]+F[+FX]+X",
-    "F-[[X]-X]+F[+FX]+X",
-    "F-[[X]+X]+F[-FX]+X"
+  rules:[
+    ["X",[
+      "F[+X]F[-X]+Y",
+      "F[-X]F[-X]+Y",
+      "F[+Y]F[-X]+X",
+      "F[-Y]F[-X]+X",
+      "F[+X]F[-Y]+X",
+      "F[-X]F[-Y]+X",
+      "F[+Y]F[-Y]+X",
+      "F[-Y]F[-Y]+X",
+      "F[+X]F[-Y]+Y",
+      "F[-X]F[-Y]+Y",
+      "F[+Y]F[-X]+Y",
+      "F[-Y]F[-X]+Y",
+      "F[+X][-X]F[-X]+X",
+      "F[+X][-X]F[-X]+Y",
+      "F[+Y][-X]F[-X]+X",
+      "F[+X][-Y]F[-X]+X",
+      "F[+X][-X]F[-Y]+X"
+    ]
     ],
-    ["F","FF"]
+    ["Y",[
+      "F-[[X]-X]+F[+FX]-Y",
+      "F+[[X]-X]-F[+FX]-Y",
+      "F+[[X]-X]-F[-FX]+Y",
+      "F-[[X]-X]+F[-FX]+Y",
+      "F-[[X]-X]+F[+FY]-X",
+      "F+[[X]-X]-F[+FY]-X",
+      "F+[[X]-X]-F[-FY]+X",
+      "F-[[X]-X]+F[-FY]+X"
+    ]
+    ],
+    ["F",["FF","FF","FF","FF","F"]]
   ]
 }
 
@@ -147,7 +167,6 @@ let rules = system.rules;
 var sentence;
 var len;
 var angle;
-
 
 function generate() {
   var next_sentence = "";
@@ -157,8 +176,7 @@ function generate() {
     for (var j = 0; j < rules.length; ++j) {
       if (current == rules[j][0]) {
         found = true;
-        var substitution = Math.floor(Math.random() * rules[j].length - 1) + 1;
-        next_sentence += rules[j][substitution];
+        next_sentence += random(rules[j][1]);
         break;
       }
     }
@@ -170,16 +188,60 @@ function generate() {
   len *= 0.58;
 }
 
+function draw_leaf(color) {
+  noStroke();
+  fill(color[0], color[1], color[2], 160);
+  let pts = [
+    createVector(0, -9), //top
+    createVector(-6, 0),//left
+    createVector(0, 9),//bottom
+    createVector(6, 0) //right
+  ];
+  
+  curveTightness(-0.2);
+  let p1 = p5.Vector.lerp(pts[1], pts[2], 0.5);
+  let p1_reverse = p5.Vector.lerp(pts[3], pts[2], 0.5);
+  let p2 = p5.Vector.lerp(pts[0], pts[2], 0.95);
+  let p23 = p5.Vector.lerp(pts[2], pts[3], 0.75);
+  let p23_reverse = p5.Vector.lerp(pts[2], pts[1], 0.75);
+  let p3 = p5.Vector.lerp(pts[1], p23, 0.95)
+  let p3_reverse = p5.Vector.lerp(pts[3], p23_reverse, 0.95);
+  let p4 = p5.Vector.lerp(pts[3], pts[0], 0.8);
+  let p4_reverse = p5.Vector.lerp(pts[1], pts[0], 0.8);
+  let p_5 = p5.Vector.lerp(p4, pts[1], 0.09);
+  let p_5_reverse = p5.Vector.lerp(p4_reverse, pts[3], 0.09);
+  let p6 = p5.Vector.lerp(pts[0], pts[2], 0.05);
+
+  beginShape();
+  curveVertex(p1.x, p1.y);
+  curveVertex(p2.x, p2.y);
+  curveVertex(p3.x, p3.y);
+  curveVertex(p_5.x, p_5.y);
+  vertex(p6.x, p6.y);
+  curveVertex(p_5_reverse.x, p_5_reverse.y);
+  curveVertex(p3_reverse.x, p3_reverse.y);
+  curveVertex(p2.x, p2.y);
+  curveVertex(p1_reverse.x, p1_reverse.y);
+  endShape();
+
+  stroke(rod_color[0], rod_color[1], rod_color[2], 160);
+  strokeWeight(0.8);
+  line(0, 5, 0, 0);
+}
+
 function turtle() {
   resetMatrix();
   translate(width / 2, (height / 2) + 132);
-  strokeWeight(2);
-  stroke(rod_color, 120);
+  strokeWeight(1.8);
+  stroke(rod_color[0], rod_color[1], rod_color[2], 240);
   for (var i = 0; i < sentence.length; ++i) {
     var current = sentence.charAt(i);
     if (current == "F") {
       line(0, 0, 0, -len);
       translate(0, -len);
+    } else if (current == "X" || current == "Y") {
+      translate(0, -4);
+      draw_leaf(leaf_color);
     } else if (current == "+") {
       angle = radians(random(system.angle_min, system.angle_max));
       rotate(angle);
@@ -189,12 +251,6 @@ function turtle() {
     } else if (current == "[") {
       push();
     } else if (current == "]") {
-      noStroke();
-      fill(leaf_color[0], leaf_color[1], leaf_color[2], 90);
-      let size = random(12, 16);
-      circle(0, 0, size);
-      fill(leaf_color);
-      circle(0, 0, size - 10);
       pop();
     }
   }
@@ -207,9 +263,6 @@ let palettes = [
 	[[230, 57, 70], [168, 218, 220], [29, 53, 87]],
 	[[241, 250, 238], [168, 218, 220], [69, 123, 157]],
 	[[142, 202, 230], [2, 48, 71], [251, 133, 0]],
-	[[33, 158, 188], [2, 48, 71], [255, 183, 3]],
-	[[0, 0, 0], [252, 163, 17], [255, 255, 255]],
-	[[20, 33, 61], [252, 163, 17], [229, 229, 229]],
 	[[244, 241, 222], [61, 64, 91], [242, 204, 143]],
 	[[224, 122, 95], [61, 64, 91], [129, 178, 154]],
 	[[255, 205, 178], [229, 152, 155], [109, 104, 117]],
@@ -245,7 +298,7 @@ function set_vars() {
   leaf_color = palette[2];
   background(back_color);
   sentence = system.axiom;
-  len = 196;
+  len = 120;
 }
 
 function new_gen() {
@@ -257,9 +310,11 @@ function new_gen() {
   for (var i = 0; i < 6; ++i) {
      generate();
   }
+  print(sentence);
   turtle();
   translate(0, 0);
   resetMatrix();
+  strokeWeight(1.8);
   var roots = new Roots();
   for (var i = 0; i < 40; ++i) {
      roots.grow();
