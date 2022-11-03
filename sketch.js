@@ -37,7 +37,6 @@ class Branch {
 
     this.show = function () {
       if (parent) {
-        stroke(rod_color[0], rod_color[1], rod_color[2], 240);
         line(this.pos.x, this.pos.y, this.parent.pos.x, this.parent.pos.y);
       }
     };
@@ -46,6 +45,10 @@ class Branch {
 
 class Roots {
   constructor() {
+    translate(0, 0);
+    resetMatrix();
+    strokeWeight(1.9);
+    stroke(rod_color[0], rod_color[1], rod_color[2], 255);
     this.leaves = [];
     this.branches = [];
 
@@ -308,13 +311,10 @@ function new_gen() {
   noStroke();
   rect(0, (height / 2) + 148, width, (height / 2) - 110);
   for (var i = 0; i < 6; ++i) {
-     generate();
+    generate();
   }
   print(sentence);
   turtle();
-  translate(0, 0);
-  resetMatrix();
-  strokeWeight(1.8);
   var roots = new Roots();
   for (var i = 0; i < 40; ++i) {
      roots.grow();
